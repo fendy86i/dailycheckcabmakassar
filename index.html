@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Planner</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .hidden { display: none; }
+    button { padding: 8px 12px; margin-top: 8px; }
+    .task { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Task Planner (Demo)</h2>
+
+  <!-- Login -->
+  <div id="login">
+    <label>Username:</label><br />
+    <input id="username" /><br />
+    <label>Role:</label><br />
+    <select id="role">
+      <option value="planner">Planner</option>
+      <option value="technician">Technician</option>
+    </select><br />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <!-- Planner -->
+  <div id="planner" class="hidden">
+    <h3>Planner Panel</h3>
+    <input id="taskName" placeholder="Task (e.g. Change Oil)" />
+    <input id="assignedTo" placeholder="Assign to technician" />
+    <button onclick="createTask()">Create Task</button>
+  </div>
+
+  <!-- Technician -->
+  <div id="technician" class="hidden">
+    <h3>My Tasks</h3>
+    <div id="tasks"></div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    function login() {
+      const name = document.getElementById('username').value;
+      const role = document.getElementById('role').value;
+      currentUser = { name, role };
+
+      document.getElementById('login').classList.add('hidden');
+
+      if (role === 'planner') {
+        document.getElementById('planner').classList.remove('hidden');
+      } else {
+        document.getElementById('technician').classList.remove('hidden');
+        loadTasks();
+        notify();
+      }
+    }
+
+    function createTask() {
+      const task = {
+        name: document.getElementById('taskName').value,
+        assignedTo: document.getElementById('assignedTo').value,
+        status: 'pending'
+      };
+
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      tasks.push(task);
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+
+      alert('Task created');
+    }
+
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+      const myTasks = tasks.filter(t => t.assignedTo === currentUser.name && t.status === 'pending');
+
+      const container = document.getElementById('tasks');
+      container.innerHTML = '';
+
+      myTasks.forEach((task, index) => {
+        const div = document.createElement('div');
+        div.className = 'task';
+        div.innerHTML = `<b>${task.name}</b><br/><button onclick="acceptTask(${index})">Yes, I will do it</button>`;
+        container.appendChild(div);
+      });
+    }
+
+    function acceptTask(index) {
+      const tasks = JSON.parse(localStorage.getItem('tasks'));
+      tasks[index].status = 'accepted';
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      loadTasks();
+    }
+
+    function notify() {
+      if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('New task assigned to you');
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
